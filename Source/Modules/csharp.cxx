@@ -78,6 +78,7 @@ class CSHARP:public Language {
   String *director_delegate_definitions;	// Director delegates definitions in proxy class
   String *director_delegate_instances;	// Director delegates member variables in proxy class
   String *director_method_types;	// Director method types
+  String *director_override_status;	// Director overridden method status
   String *director_connect_parms;	// Director delegates parameter list for director connect call
   String *destructor_call;	//C++ destructor call if any
   String *output_file;		// File name for single file mode. If set all generated code will be written to this file
@@ -152,8 +153,9 @@ public:
       director_delegate_callback(NULL),
       director_delegate_definitions(NULL),
       director_delegate_instances(NULL),
-      director_method_types(NULL),
       director_connect_parms(NULL),
+      director_method_types(NULL),
+      director_override_status(NULL),
       destructor_call(NULL),
       output_file(NULL),
       dmethods_seq(NULL),
@@ -1985,6 +1987,10 @@ public:
 	Printv(proxy_class_code, "\n", director_delegate_instances, NIL);
       if (Len(director_method_types) > 0)
 	Printv(proxy_class_code, "\n", director_method_types, NIL);
+      if (Len(director_override_status) > 0)
+	Printv(proxy_class_code, "\n", director_override_status, NIL);
+
+      Printv(proxy_class_code, "\n", NIL);
 
       Delete(director_callback_typedefs);
       director_callback_typedefs = NULL;
@@ -1998,6 +2004,8 @@ public:
       director_delegate_instances = NULL;
       Delete(director_method_types);
       director_method_types = NULL;
+      Delete(director_override_status);
+      director_override_status = NULL;
       Delete(director_connect_parms);
       director_connect_parms = NULL;
       Delete(director_connect_method_name);
@@ -2545,9 +2553,9 @@ public:
 	  String *methid = Getattr(udata, "class_methodidx");
 
 	  if (!Cmp(return_type, "void"))
-	    Printf(excode, "if (SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s)) %s; else %s", proxy_function_name, methid, ex_imcall, imcall);
+	    Printf(excode, "if ((swigMethodOverriden%s ?? (swigMethodOverriden%s = SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s))).Value) %s; else %s", methid, methid, proxy_function_name, methid, ex_imcall, imcall);
 	  else
-	    Printf(excode, "(SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s) ? %s : %s)", proxy_function_name, methid, ex_imcall, imcall);
+	    Printf(excode, "(((swigMethodOverriden%s ?? (swigMethodOverriden%s = SwigDerivedClassHasMethod(\"%s\", swigMethodTypes%s))).Value) ? %s : %s)", methid, methid, proxy_function_name, methid, ex_imcall, imcall);
 
 	  Clear(imcall);
 	  Printv(imcall, excode, NIL);
@@ -4245,6 +4253,7 @@ public:
       Printf(director_delegate_definitions, " SwigDelegate%s_%s(%s);\n", classname, methid, delegate_parms);
       Printf(director_delegate_instances, "  private SwigDelegate%s_%s swigDelegate%s;\n", classname, methid, methid);
       Printf(director_method_types, "  private static global::System.Type[] swigMethodTypes%s = new global::System.Type[] { %s };\n", methid, proxy_method_types);
+      Printf(director_override_status, "  private bool? swigMethodOverriden%s = null;\n", methid);
       Printf(director_connect_parms, "SwigDirector%s%s delegate%s", classname, methid, methid);
     }
 
@@ -4368,6 +4377,7 @@ public:
     director_delegate_definitions = NewString("");
     director_delegate_instances = NewString("");
     director_method_types = NewString("");
+    director_override_status = NewString("");
     director_connect_parms = NewString("");
 
     return Language::classDirectorInit(n);
@@ -4380,6 +4390,7 @@ public:
     String *old_director_delegate_definitions = director_delegate_definitions;
     String *old_director_delegate_instances = director_delegate_instances;
     String *old_director_method_types = director_method_types;
+    String *old_director_override_status = director_override_status;
     String *old_director_connect_parms = director_connect_parms;
 
     int ret = Language::classDeclaration(n);
@@ -4391,6 +4402,7 @@ public:
     director_delegate_definitions = old_director_delegate_definitions;
     director_delegate_instances = old_director_delegate_instances;
     director_method_types = old_director_method_types;
+    director_override_status = old_director_override_status;
     director_connect_parms = old_director_connect_parms;
 
     return ret;
