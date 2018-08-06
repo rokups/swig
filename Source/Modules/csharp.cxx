@@ -4365,6 +4365,10 @@ public:
     directorDeclaration(n);
 
     Printf(f_directors_h, "%s {\n", Getattr(n, "director:decl"));
+
+    Printv(f_directors_h, typemapLookup(n, "directorbody", Getattr(n, "classtypeobj"),
+      WARN_CSHARP_TYPEMAP_CLASSMOD_UNDEF), "\n", NIL);
+
     Printf(f_directors_h, "\npublic:\n");
 
     /* Keep track of the director methods for this class */
