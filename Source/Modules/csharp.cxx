@@ -153,9 +153,9 @@ public:
       director_delegate_callback(NULL),
       director_delegate_definitions(NULL),
       director_delegate_instances(NULL),
-      director_connect_parms(NULL),
       director_method_types(NULL),
       director_override_status(NULL),
+      director_connect_parms(NULL),
       destructor_call(NULL),
       output_file(NULL),
       dmethods_seq(NULL),
@@ -390,6 +390,7 @@ public:
     module_class_modifiers = NewString("");
     imclass_imports = NewString("");
     imclass_cppcasts_code = NewString("");
+    director_override_status = NewString("");
     director_connect_parms = NewString("");
     upcasts_code = NewString("");
     dmethods_seq = NewList();
