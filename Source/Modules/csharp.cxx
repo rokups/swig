@@ -71,6 +71,8 @@ class CSHARP:public Language {
   String *imclass_class_modifiers;	//class modifiers for intermediary class overridden by %pragma
   String *module_class_modifiers;	//class modifiers for module class overridden by %pragma
   String *upcasts_code;		//C++ casts for inheritance hierarchies C++ code
+  String *typeid_imcode;    //C# code with typeid registrations
+  String *typeid_cppcode;    //C++ code with typeid functions
   String *imclass_cppcasts_code;	//C++ casts up inheritance hierarchies intermediary class code
   String *director_callback_typedefs;	// Director function pointer typedefs for callbacks
   String *director_callbacks;	// Director callback function pointer member variables
@@ -147,6 +149,8 @@ public:
       imclass_class_modifiers(NULL),
       module_class_modifiers(NULL),
       upcasts_code(NULL),
+      typeid_imcode(NULL),
+      typeid_cppcode(NULL),
       imclass_cppcasts_code(NULL),
       director_callback_typedefs(NULL),
       director_callbacks(NULL),
@@ -393,6 +397,8 @@ public:
     director_override_status = NewString("");
     director_connect_parms = NewString("");
     upcasts_code = NewString("");
+    typeid_imcode = NewString("");
+    typeid_cppcode = NewString("");
     dmethods_seq = NewList();
     dmethods_table = NewHash();
     n_dmethods = 0;
@@ -478,6 +484,17 @@ public:
       Printv(f_im, imclass_class_code, NIL);
       Printv(f_im, imclass_cppcasts_code, NIL);
 
+      // Type registration
+      if (CPlusPlus && typeid_imcode) {
+        Printv(f_im, "\n  public static global::System.Collections.Generic.Dictionary<global::System.IntPtr, "
+                     "global::System.Type> SWIGTypeRegistry;\n", NIL);
+        Printv(f_im, "  public static void SWIGInitializeTypeRegistry() {\n", NIL);
+        Printv(f_im, "    SWIGTypeRegistry = new global::System.Collections.Generic.Dictionary<"
+                     "global::System.IntPtr, global::System.Type>();\n", NIL);
+        Printv(f_im, typeid_imcode, NIL);
+        Printv(f_im, "  }\n", NIL);
+      }
+
       // Finish off the class
       Printf(f_im, "}\n");
       addCloseNamespace(0, f_im);
@@ -534,6 +551,11 @@ public:
       Printv(f_wrappers, upcasts_code, NIL);
 
     Printf(f_wrappers, "#ifdef __cplusplus\n");
+
+    if (CPlusPlus && typeid_cppcode) {
+      Printv(f_wrappers, typeid_cppcode, NIL);
+    }
+
     Printf(f_wrappers, "}\n");
     Printf(f_wrappers, "#endif\n");
 
@@ -599,6 +621,10 @@ public:
     imclass_cppcasts_code = NULL;
     Delete(upcasts_code);
     upcasts_code = NULL;
+    Delete(typeid_imcode);
+    typeid_imcode = NULL;
+    Delete(typeid_cppcode);
+    typeid_cppcode = NULL;
     Delete(dmethods_seq);
     dmethods_seq = NULL;
     Delete(dmethods_table);
@@ -2029,6 +2055,46 @@ public:
 
     Delete(smart);
     Delete(baseclass);
+
+    // TypeId functions
+    if (CPlusPlus) {
+      String *typeid_method_name = Swig_name_member(getNSpace(), getClassPrefix(), "SWIGTypeId");
+      String *wname = Swig_name_wrapper(typeid_method_name);
+
+      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+      Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s(global::System.IntPtr jarg1);\n", typeid_method_name);
+
+      Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
+
+      Printv(typeid_cppcode,
+      "SWIGEXPORT const void* SWIGSTDCALL ", wname, "(", c_classname, " *jarg1) {\n",
+      "    return reinterpret_cast<const void*>(&typeid(*jarg1));\n"
+      "}\n\n", NIL);
+
+      Delete(wname);
+      Delete(typeid_method_name);
+
+
+      typeid_method_name = Swig_name_member(getNSpace(), getClassPrefix(), "SWIGTypeIdStatic");
+      wname = Swig_name_wrapper(typeid_method_name);
+
+      Printv(imclass_cppcasts_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
+      Printf(imclass_cppcasts_code, "  public static extern global::System.IntPtr %s();\n", typeid_method_name);
+
+      Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
+
+      Printv(typeid_cppcode,
+      "SWIGEXPORT const void* SWIGSTDCALL ", wname, "() {\n",
+      "    return reinterpret_cast<const void*>(&typeid(", c_classname, "));\n"
+      "}\n\n", NIL);
+
+      String* scope = getCurrentScopeName(NIL);
+      Printv(typeid_imcode, "    SWIGTypeRegistry[", typeid_method_name, "()] = typeof(", scope, ");\n", NIL);
+
+      Delete(scope);
+      Delete(wname);
+      Delete(typeid_method_name);
+    }
   }
 
   /* ----------------------------------------------------------------------
