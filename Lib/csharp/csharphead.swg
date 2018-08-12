@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef __cplusplus
+#include <typeinfo>
+#endif
 %}
 
 #if !defined(SWIG_CSHARP_NO_EXCEPTION_HELPER)
