@@ -2063,8 +2063,8 @@ public:
       Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
 
       Printv(typeid_cppcode,
-      "SWIGEXPORT const void* SWIGSTDCALL ", wname, "(", c_classname, " *jarg1) {\n",
-      "    return reinterpret_cast<const void*>(&typeid(*jarg1));\n"
+      "SWIGEXPORT size_t SWIGSTDCALL ", wname, "(", c_classname, " *jarg1) {\n",
+      "    return typeid(*jarg1).hash_code();\n"
       "}\n\n", NIL);
 
       Delete(wname);
@@ -2080,8 +2080,8 @@ public:
       Replaceall(imclass_cppcasts_code, "$csclassname", proxy_class_name);
 
       Printv(typeid_cppcode,
-      "SWIGEXPORT const void* SWIGSTDCALL ", wname, "() {\n",
-      "    return reinterpret_cast<const void*>(&typeid(", c_classname, "));\n"
+      "SWIGEXPORT size_t SWIGSTDCALL ", wname, "() {\n",
+      "    return typeid(", c_classname, ").hash_code();\n"
       "}\n\n", NIL);
 
       String* scope = getCurrentScopeName(NIL);
