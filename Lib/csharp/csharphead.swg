@@ -343,7 +343,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
                       global::System.Reflection.BindingFlags.NonPublic |
                       global::System.Reflection.BindingFlags.Instance, null, methodTypes, null);
       bool hasDerivedMethod = methodInfo.IsVirtual && !methodInfo.IsAbstract &&
-                              methodInfo.DeclaringType.IsSubclassOf(classType) &&
+                              (methodInfo.DeclaringType.IsSubclassOf(classType) || methodInfo.DeclaringType == classType) &&
                               methodInfo.DeclaringType != methodInfo.GetBaseDefinition().DeclaringType;
       /* Could add this code to cover corner case where the GetMethod() returns a method which allows type
        * promotion, eg it will return foo(double), if looking for foo(int).
