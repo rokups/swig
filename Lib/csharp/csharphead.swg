@@ -322,6 +322,42 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
 %}
 #endif // SWIG_CSHARP_NO_STRING_HELPER
 
+%insert(runtime) %{
+/* Callback for returning strings to C# without leaking memory */
+typedef void(SWIGSTDCALL* SWIG_CSharpFreeGCHandleHelperCallback)(void*);
+static SWIG_CSharpFreeGCHandleHelperCallback SWIG_csharp_free_gchandle_callback = NULL;
+%}
+
+%pragma(csharp) imclasscode=%{
+  protected class SWIGFreeGCHandleHelper {
+
+    public delegate void SWIGFreeGCHandleDelegate(global::System.IntPtr gcHandle);
+    static SWIGFreeGCHandleDelegate delegateInstance = new SWIGFreeGCHandleDelegate(FreeGCHandle);
+
+    [global::System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="SWIGRegisterFreeGCHandleCallback_$module")]
+    public static extern void SWIGRegisterFreeGCHandleCallback_$module(SWIGFreeGCHandleDelegate delegateInstance);
+
+    static void FreeGCHandle(global::System.IntPtr gcHandle) {
+      global::System.Runtime.InteropServices.GCHandle.FromIntPtr(gcHandle).Free();
+    }
+
+    static SWIGFreeGCHandleHelper() {
+      SWIGRegisterFreeGCHandleCallback_$module(delegateInstance);
+    }
+  }
+
+  static protected SWIGFreeGCHandleHelper swigFreeGCHandleHelper = new SWIGFreeGCHandleHelper();
+%}
+
+%insert(runtime) %{
+#ifdef __cplusplus
+extern "C"
+#endif
+SWIGEXPORT void SWIGSTDCALL SWIGRegisterFreeGCHandleCallback_$module(SWIG_CSharpFreeGCHandleHelperCallback callback) {
+  SWIG_csharp_free_gchandle_callback = callback;
+}
+%}
+
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)
 // Ensure the class is not marked beforefieldinit
 %pragma(csharp) imclasscode=%{
@@ -337,6 +373,11 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
 %}
 
 %pragma(csharp) imclasscode=%{
+    internal delegate void SwigDelegateFreeGCHandle(global::System.IntPtr handle);
+    internal static void FreeGCHandle(global::System.IntPtr handle)
+    {
+        global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
+    }
     internal static bool SwigDerivedClassHasMethod(object instance, string methodName, global::System.Type classType, global::System.Type[] methodTypes) {
       global::System.Reflection.MethodInfo methodInfo = instance.GetType().GetMethod(
           methodName, global::System.Reflection.BindingFlags.Public |

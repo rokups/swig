@@ -1990,7 +1990,8 @@ public:
 	Printf(proxy_class_code, "      swigDelegate%s = new SwigDelegate%s_%s(SwigDirector%s);\n", methid, proxy_class_name, methid, overname);
       }
       String *director_connect_method_name = Swig_name_member(getNSpace(), getClassPrefix(), "director_connect");
-      Printf(proxy_class_code, "    %s.%s(swigCPtr", imclass_name, director_connect_method_name);
+      Printf(proxy_class_code, "    var gcHandle = global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this));\n");
+      Printf(proxy_class_code, "    %s.%s(swigCPtr, gcHandle", imclass_name, director_connect_method_name);
       for (i = first_class_dmethod; i < curr_class_dmethod; ++i) {
 	UpcallData *udata = Getitem(dmethods_seq, i);
 	String *methid = Getattr(udata, "class_methodidx");
@@ -3776,10 +3777,10 @@ public:
       Insert(qualified_classname, 0, NewStringf("%s.", nspace));
 
     Printv(imclass_class_code, "\n  [global::System.Runtime.InteropServices.DllImport(\"", dllimport, "\", EntryPoint=\"", wname, "\")]\n", NIL);
-    Printf(imclass_class_code, "  public static extern void %s(global::System.Runtime.InteropServices.HandleRef jarg1", swig_director_connect);
+    Printf(imclass_class_code, "  public static extern void %s(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.IntPtr handle", swig_director_connect);
 
     Wrapper *code_wrap = NewWrapper();
-    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL %s(void *objarg", wname);
+    Printf(code_wrap->def, "SWIGEXPORT void SWIGSTDCALL %s(void *objarg, void* handle", wname);
 
     if (smartptr) {
       Printf(code_wrap->code, "  %s *obj = (%s *)objarg;\n", smartptr, smartptr);
@@ -3791,6 +3792,7 @@ public:
       Printf(code_wrap->code, "  %s *director = static_cast<%s *>(obj);\n", dirClassName, dirClassName);
     }
 
+    Printf(code_wrap->code, "  director->swig_managedObjectHandle = handle;\n");
     Printf(code_wrap->code, "  director->swig_connect_director(");
 
     for (int i = first_class_dmethod; i < curr_class_dmethod; ++i) {
@@ -4500,6 +4502,7 @@ public:
       Printf(w->def, "%s::~%s() {\n", dirclassname, dirclassname);
     }
 
+    Printv(w->code, "SWIG_csharp_free_gchandle_callback(swig_managedObjectHandle);\n", NIL);
     Printv(w->code, "}\n", NIL);
 
     Wrapper_print(w, f_directors);
@@ -4523,6 +4526,7 @@ public:
       Printf(f_directors_h, "\n%s", director_callback_typedefs);
     }
 
+    Printf(f_directors_h, "    void* swig_managedObjectHandle;\n");
     Printf(f_directors_h, "    void swig_connect_director(");
 
     Printf(w->def, "void %s::swig_connect_director(", dirclassname);
